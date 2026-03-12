@@ -214,8 +214,14 @@ function resolveOAuthClientConfig(): { clientId: string; clientSecret?: string }
   );
 }
 
-function shouldUseManualOAuthFlow(isRemote: boolean): boolean {
-  return isRemote || isWSL2Sync();
+function shouldUseManualOAuthFlow(_isRemote: boolean): boolean {
+  // On macOS the localhost:8085 callback server silently drops the redirect —
+  // the browser completes Google sign-in but the code is never received,
+  // causing "Gemini CLI OAuth failed". Fall back to the manual paste flow on
+  // darwin so the user can copy the redirect URL from the browser address bar.
+  // Remote/WSL2 environments already used manual flow before this change.
+  // See: https://github.com/openclaw/openclaw/issues/41619
+  return process.platform === "darwin" || _isRemote || isWSL2Sync();
 }
 
 function generatePkce(): { verifier: string; challenge: string } {
